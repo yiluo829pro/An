@@ -1,64 +1,68 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { useAppStore } from './store/appStore'
+import MoodBar from './components/MoodBar'
+import Onboarding from './pages/Onboarding'
+import Dashboard from './pages/Dashboard'
+import AnchorNow from './pages/AnchorNow'
+import IdentityVault from './pages/IdentityVault'
+import Treasury from './pages/Treasury'
+import Journal from './pages/Journal'
+import Reflect from './pages/Reflect'
 
-function Home() {
-  const { profile, currentMood } = useAppStore()
+function AppRouter() {
+  const { profile, currentMood, setCurrentMood } = useAppStore()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  // Guard: if not onboarded and not already on onboarding route, redirect
+  useEffect(() => {
+    if (!profile.onboardingComplete && location.pathname !== '/onboarding') {
+      // handled by render logic below
+    }
+  }, [profile.onboardingComplete, location.pathname])
+
+  // If not onboarded, show mood bar first, then onboarding
+  if (!profile.onboardingComplete && location.pathname !== '/onboarding') {
+    if (currentMood === null) {
+      return (
+        <MoodBar onComplete={(value) => {
+          setCurrentMood(value)
+          navigate('/onboarding')
+        }} />
+      )
+    }
+    return <Onboarding />
+  }
+
+  // If onboarded but no mood yet this session
+  if (profile.onboardingComplete && currentMood === null && location.pathname === '/') {
+    return (
+      <MoodBar onComplete={(value) => {
+        setCurrentMood(value)
+        navigate('/dashboard')
+      }} />
+    )
+  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6">
-      <div className="text-center max-w-md">
-        <h1 className="text-5xl font-serif mb-3 tracking-wide">安</h1>
-        <p className="text-lg text-[#a09898] mb-8 font-light">
-          {profile.onboardingComplete
-            ? `Welcome back. You are still you.`
-            : `When life shakes you, An helps you find your way back to yourself.`}
-        </p>
-        {currentMood !== null && (
-          <p className="text-sm text-[#7a7070] mb-6">
-            Today you're feeling <span className="text-[#e8c547]">{currentMood}</span>
-          </p>
-        )}
-        <div className="flex flex-col gap-3">
-          {!profile.onboardingComplete && (
-            <a
-              href="/onboarding"
-              className="px-6 py-3 bg-[#e8c547] text-[#0f0f14] rounded-lg font-medium hover:bg-[#f5e642] transition-colors"
-            >
-              Begin
-            </a>
-          )}
-          {profile.onboardingComplete && (
-            <>
-              <a href="/dashboard" className="px-6 py-3 bg-[#1e1e28] border border-[#2e2e3a] rounded-lg hover:border-[#e8c547] transition-colors">
-                Open Dashboard
-              </a>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function Placeholder({ name }: { name: string }) {
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <h2 className="text-2xl font-serif mb-2">{name}</h2>
-        <p className="text-[#7a7070]">Coming soon</p>
-        <a href="/" className="mt-4 inline-block text-sm text-[#e8c547] hover:underline">← Back</a>
-      </div>
-    </div>
+    <Routes>
+      <Route path="/" element={
+        currentMood === null
+          ? <MoodBar onComplete={(value) => { setCurrentMood(value); navigate('/dashboard') }} />
+          : <Dashboard />
+      } />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/anchor" element={<AnchorNow />} />
+      <Route path="/vault" element={<IdentityVault />} />
+      <Route path="/treasury" element={<Treasury />} />
+      <Route path="/journal" element={<Journal />} />
+      <Route path="/reflect" element={<Reflect />} />
+    </Routes>
   )
 }
 
 export default function App() {
-  return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/onboarding" element={<Placeholder name="Onboarding" />} />
-      <Route path="/dashboard" element={<Placeholder name="Dashboard" />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  )
+  return <AppRouter />
 }

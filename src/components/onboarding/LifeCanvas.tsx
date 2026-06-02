@@ -9,7 +9,7 @@ const FEELINGS = ['Calm', 'Free', 'Present', 'Purposeful', 'Connected', 'Creativ
 
 export default function LifeCanvas({ onComplete }: LifeCanvasProps) {
   const [step, setStep] = useState(0)
-  const [selectedFeeling, setSelectedFeeling] = useState('')
+  const [_selectedFeeling, setSelectedFeeling] = useState('')
 
   const steps = [
     {

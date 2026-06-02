@@ -24,11 +24,8 @@ const PATTERNS: Record<string, string> = {
 export default function ComfortCompass({ onComplete }: ComfortCompassProps) {
   const [step, setStep] = useState(0)
   const [aloneCount, setAloneCount] = useState(0)
-  const [direction, setDirection] = useState(0)
-
   const handlePick = (index: number) => {
     if (index === 0) setAloneCount(c => c + 1)
-    setDirection(index === 0 ? -1 : 1)
     setTimeout(() => {
       if (step + 1 >= PAIRS.length) {
         const ratio = aloneCount / PAIRS.length
@@ -36,7 +33,6 @@ export default function ComfortCompass({ onComplete }: ComfortCompassProps) {
         onComplete(pattern)
       } else {
         setStep(s => s + 1)
-        setDirection(0)
       }
     }, 200)
   }
