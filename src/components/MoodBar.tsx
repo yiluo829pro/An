@@ -7,6 +7,17 @@ interface MoodBarProps {
   onComplete: (value: number) => void
 }
 
+const SCALE_LABELS = [
+  { word: 'Bright', pct: 96 },
+  { word: 'Light', pct: 87 },
+  { word: 'Good', pct: 76 },
+  { word: 'Steady', pct: 62 },
+  { word: 'Okay', pct: 50 },
+  { word: 'Quiet', pct: 37 },
+  { word: 'Low', pct: 22 },
+  { word: 'Heavy', pct: 7 },
+]
+
 export default function MoodBar({ onComplete }: MoodBarProps) {
   const [value, setValue] = useState(50)
   const [isDragging, setIsDragging] = useState(false)
@@ -18,8 +29,7 @@ export default function MoodBar({ onComplete }: MoodBarProps) {
   const getValueFromY = useCallback((clientY: number) => {
     if (!barRef.current) return 50
     const rect = barRef.current.getBoundingClientRect()
-    const relativeY = clientY - rect.top
-    const pct = 1 - relativeY / rect.height
+    const pct = 1 - (clientY - rect.top) / rect.height
     return Math.max(0, Math.min(100, pct * 100))
   }, [])
 
@@ -28,48 +38,42 @@ export default function MoodBar({ onComplete }: MoodBarProps) {
     setIsDragging(true)
     setHasInteracted(true)
     setShowQuestion(false)
-    const v = getValueFromY(e.clientY)
-    setValue(v)
+    setValue(getValueFromY(e.clientY))
   }
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!isDragging) return
-    const v = getValueFromY(e.clientY)
-    setValue(v)
+    setValue(getValueFromY(e.clientY))
   }
 
-  const handlePointerUp = () => {
-    setIsDragging(false)
-  }
+  const handlePointerUp = () => setIsDragging(false)
 
   const handleConfirm = () => {
     logMood(value)
     onComplete(value)
   }
 
-  const word = getMoodWord(value)
+  const activeWord = getMoodWord(value)
   const barColor = getMoodBarColor(value)
 
-  const getBgStyle = () => {
-    const v = value
-    if (v <= 15) return { background: 'linear-gradient(180deg, #050508 0%, #0d0d1a 100%)' }
-    if (v <= 30) return { background: 'linear-gradient(180deg, #0d0d1a 0%, #1e2040 100%)' }
-    if (v <= 45) return { background: 'linear-gradient(180deg, #151820 0%, #2a2f3a 100%)' }
-    if (v <= 55) return { background: 'linear-gradient(180deg, #1a2020 0%, #2a3828 100%)' }
-    if (v <= 70) return { background: 'linear-gradient(180deg, #1e1a10 0%, #352a15 100%)' }
-    if (v <= 82) return { background: 'linear-gradient(180deg, #201a08 0%, #453510 100%)' }
-    if (v <= 92) return { background: 'linear-gradient(180deg, #251800 0%, #5a3a08 100%)' }
+  const getBgStyle = (): React.CSSProperties => {
+    if (value <= 15) return { background: 'linear-gradient(180deg, #050508 0%, #0d0d1a 100%)' }
+    if (value <= 30) return { background: 'linear-gradient(180deg, #0d0d1a 0%, #1e2040 100%)' }
+    if (value <= 45) return { background: 'linear-gradient(180deg, #151820 0%, #2a2f3a 100%)' }
+    if (value <= 55) return { background: 'linear-gradient(180deg, #1a2020 0%, #2a3828 100%)' }
+    if (value <= 70) return { background: 'linear-gradient(180deg, #1e1a10 0%, #352a15 100%)' }
+    if (value <= 82) return { background: 'linear-gradient(180deg, #201a08 0%, #453510 100%)' }
+    if (value <= 92) return { background: 'linear-gradient(180deg, #251800 0%, #5a3a08 100%)' }
     return { background: 'linear-gradient(180deg, #2a1e00 0%, #7a5510 100%)' }
   }
-
-  const thumbY = `${100 - value}%`
 
   return (
     <motion.div
       className="fixed inset-0 flex flex-col items-center justify-center"
       style={getBgStyle()}
-      animate={getBgStyle()}
-      transition={{ duration: 0.6, ease: 'easeOut' }}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      animate={getBgStyle() as any}
+      transition={{ duration: 0.5 }}
     >
       <AnimatePresence>
         {showQuestion && (
@@ -78,19 +82,51 @@ export default function MoodBar({ onComplete }: MoodBarProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ delay: 0.4 }}
-            className="absolute top-1/4 font-serif text-2xl text-white/70 tracking-wide"
+            className="absolute font-serif text-2xl text-white/70 tracking-wide"
+            style={{ top: '22%' }}
           >
             How are you today?
           </motion.p>
         )}
       </AnimatePresence>
 
-      <div className="flex items-center gap-8">
-        {/* The vertical bar */}
+      {/* Bar + labels layout */}
+      <div className="flex items-stretch gap-0" style={{ height: 320 }}>
+
+        {/* Labels on the left */}
+        <div className="relative flex flex-col justify-between pr-3 py-0" style={{ width: 72 }}>
+          {SCALE_LABELS.map(({ word }) => {
+            const isActive = activeWord === word
+            return (
+              <div key={word} className="flex items-center justify-end gap-2">
+                <span
+                  className="text-xs font-sans tracking-wide transition-all duration-200 select-none"
+                  style={{
+                    color: isActive ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.22)',
+                    fontWeight: isActive ? 500 : 400,
+                    fontSize: isActive ? 13 : 11,
+                  }}
+                >
+                  {word}
+                </span>
+                {/* tick */}
+                <div
+                  className="h-px transition-all duration-200"
+                  style={{
+                    width: isActive ? 10 : 6,
+                    background: isActive ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.12)',
+                  }}
+                />
+              </div>
+            )
+          })}
+        </div>
+
+        {/* The bar */}
         <div
           ref={barRef}
-          className="relative w-2 h-80 rounded-full cursor-pointer select-none"
-          style={{ background: 'rgba(255,255,255,0.08)' }}
+          className="relative rounded-full cursor-pointer select-none"
+          style={{ width: 8, background: 'rgba(255,255,255,0.08)' }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -103,11 +139,13 @@ export default function MoodBar({ onComplete }: MoodBarProps) {
           />
           {/* Thumb */}
           <motion.div
-            className="absolute left-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-2 border-white/80"
+            className="absolute left-1/2 rounded-full border-2 border-white/80"
             style={{
-              top: thumbY,
+              width: 20,
+              height: 20,
+              top: `${100 - value}%`,
+              transform: 'translate(-50%, -50%)',
               background: barColor,
-              transform: `translateX(-50%) translateY(-50%)`,
             }}
             animate={{
               scale: isDragging ? 1.3 : 1,
@@ -115,31 +153,16 @@ export default function MoodBar({ onComplete }: MoodBarProps) {
             }}
           />
         </div>
-
-        {/* Mood word */}
-        <AnimatePresence mode="wait">
-          {hasInteracted && (
-            <motion.div
-              key={word}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 8 }}
-              transition={{ duration: 0.2 }}
-              className="font-serif text-xl text-white/80 w-20"
-            >
-              {word}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
+      {/* Continue button */}
       <AnimatePresence>
         {hasInteracted && (
           <motion.button
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.2 }}
             onClick={handleConfirm}
             className="absolute bottom-16 px-8 py-3 rounded-full text-sm tracking-widest uppercase text-white/60 border border-white/20 hover:border-white/40 hover:text-white/80 transition-all"
           >
